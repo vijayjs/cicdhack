@@ -25,8 +25,15 @@ class HomeControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
         
+        if ($content === false) {
+            $this->fail('Response content is empty');
+        }
+
+        $data = json_decode($content, true);
+        
+        $this->assertIsArray($data);
         $this->assertArrayHasKey('status', $data);
         $this->assertEquals('healthy', $data['status']);
     }
