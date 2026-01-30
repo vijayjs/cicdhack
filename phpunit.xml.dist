@@ -13,7 +13,9 @@
         <server name="SHELL_VERBOSITY" value="-1"/>
         <server name="SYMFONY_DEPRECATIONS_HELPER" value="disabled"/>
     </php>
-
+ <extensions>
+        <!-- extensions will be added here -->
+    </extensions>
     <testsuites>
         <testsuite name="Project Test Suite">
             <directory>tests</directory>
