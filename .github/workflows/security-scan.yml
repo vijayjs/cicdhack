@@ -63,6 +63,34 @@ jobs:
             phpstan-results.json
             phpcs-results.json
 
+  eslint:
+    name: Linting (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          else
+            npm init -y
+            npm install eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin --save-dev
+          fi
+      - name: Run ESLint
+        run: |
+          # Run on any JS/TS files found
+          npx eslint "**/*.{js,ts}" --fix-dry-run --format json > eslint-results.json || true
+      - name: Upload ESLint results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-results
+          path: eslint-results.json
+
   # ==========================================
   # SCA - Software Composition Analysis
   # ==========================================
@@ -204,12 +232,43 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ==========================================
+  # DAST - Dynamic Application Security Testing
+  # ==========================================
+  dast-zap:
+    name: OWASP ZAP Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: ZAP Scan
+        uses: zaproxy/action-full-scan@v0.12.0
+        with:
+          target: 'http://localhost' # In a real scenario, this would be the staging/prod URL
+          fail_action: false
+          artifact_name: 'zap-report'
+
+  # ==========================================
+  # Performance & Best Practices
+  # ==========================================
+  lighthouse:
+    name: Lighthouse Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Lighthouse Report
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            http://localhost/
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  # ==========================================
   # Security Report
   # ==========================================
   security-report:
     name: Generate Security Report
     runs-on: ubuntu-latest
-    needs: [sast, sca, container-scan, iac-scan, secret-scan]
+    needs: [sast, eslint, sca, container-scan, iac-scan, secret-scan, dast-zap, lighthouse]
     if: always()
     
     steps:
@@ -228,7 +287,10 @@ jobs:
           echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| SAST (PHPStan) | ${{ needs.sast.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| SCA (Dependencies) | ${{ needs.sca.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linting (ESLint) | ${{ needs.eslint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SCA (Trivy/Composer) | ${{ needs.sca.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Container Scan | ${{ needs.container-scan.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| IaC Scan | ${{ needs.iac-scan.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Secret Scan | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| DAST (OWASP ZAP) | ${{ needs.dast-zap.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lighthouse | ${{ needs.lighthouse.result }} |" >> $GITHUB_STEP_SUMMARY

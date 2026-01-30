@@ -34,11 +34,13 @@ echo "Green traffic: ${GREEN_WEIGHT}%"
 echo ""
 
 # Confirm before proceeding
-read -p "Proceed with traffic switch? (y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted."
-    exit 1
+if [[ "$3" != "-y" ]]; then
+    read -p "Proceed with traffic switch? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 1
+    fi
 fi
 
 # Switch traffic using Terraform
