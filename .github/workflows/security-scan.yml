@@ -94,7 +94,7 @@ jobs:
           exit-code: '0'
 
       - name: Upload Trivy scan results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-fs-results.sarif'
           category: 'dependency-scan'
@@ -130,7 +130,7 @@ jobs:
           exit-code: '0'
 
       - name: Upload Trivy container results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-container-results.sarif'
           category: 'container-scan'
@@ -155,7 +155,7 @@ jobs:
           soft_fail: true
 
       - name: Upload tfsec results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: tfsec-results.sarif
