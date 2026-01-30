@@ -1,0 +1,368 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 2rem;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        padding: 1.5rem;
+    }
+
+    .metric-label {
+        font-size: 0.75rem;
+        color: var(--gray-400);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .metric-trend {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+
+    .trend-up { color: var(--secondary); }
+    .trend-down { color: var(--danger); }
+
+    .blue-green-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .env-panel {
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .env-panel.active {
+        border: 2px solid var(--secondary);
+    }
+
+    .env-panel.blue { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(30, 27, 75, 0.5)); }
+    .env-panel.green { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(30, 27, 75, 0.5)); }
+
+    .env-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .env-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .env-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .env-status.active {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--secondary);
+    }
+
+    .env-status.standby {
+        background: rgba(156, 163, 175, 0.2);
+        color: var(--gray-400);
+    }
+
+    .env-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .env-detail {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .env-detail-label {
+        font-size: 0.7rem;
+        color: var(--gray-400);
+        text-transform: uppercase;
+    }
+
+    .env-detail-value {
+        font-weight: 600;
+    }
+
+    .deployments-section {
+        margin-top: 2rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .deployments-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .deployments-table th,
+    .deployments-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .deployments-table th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--gray-400);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--secondary);
+    }
+
+    .status-standby {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent);
+    }
+
+    .status-archived {
+        background: rgba(156, 163, 175, 0.2);
+        color: var(--gray-400);
+    }
+
+    .traffic-bar {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+
+    .traffic-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .traffic-fill.blue { background: var(--blue-env); }
+    .traffic-fill.green { background: var(--green-env); }
+
+    .nav-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .nav-tab {
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: var(--gray-400);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .nav-tab:hover,
+    .nav-tab.active {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: var(--primary);
+        color: var(--white);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>📊 Deployment Dashboard</h1>
+        <div>
+            <a href="{{ path('dashboard_deployments') }}" class="btn btn-secondary">View All Deployments</a>
+        </div>
+    </div>
+
+    <div class="nav-tabs">
+        <a href="{{ path('dashboard_index') }}" class="nav-tab active">Overview</a>
+        <a href="{{ path('dashboard_deployments') }}" class="nav-tab">Deployments</a>
+        <a href="{{ path('dashboard_security') }}" class="nav-tab">Security</a>
+    </div>
+
+    <!-- DevOps Metrics -->
+    <div class="metrics-grid">
+        <div class="card metric-card">
+            <div class="metric-label">Lead Time</div>
+            <div class="metric-value">{{ metrics.lead_time.value }}</div>
+            <div class="metric-trend trend-{{ metrics.lead_time.trend == 'down' ? 'up' : 'down' }}">
+                {{ metrics.lead_time.trend == 'down' ? '↓' : '↑' }} Improving
+            </div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-label">Deploy Frequency</div>
+            <div class="metric-value">{{ metrics.deploy_freq.value }}</div>
+            <div class="metric-trend trend-up">
+                {{ metrics.deploy_freq.trend == 'up' ? '↑' : '↓' }} Increasing
+            </div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-label">MTTR</div>
+            <div class="metric-value">{{ metrics.mttr.value }}</div>
+            <div class="metric-trend trend-up">
+                {{ metrics.mttr.trend == 'down' ? '↓' : '↑' }} Improving
+            </div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-label">Failure Rate</div>
+            <div class="metric-value">{{ metrics.failure_rate.value }}</div>
+            <div class="metric-trend trend-up">
+                {{ metrics.failure_rate.trend == 'down' ? '↓' : '↑' }} Low
+            </div>
+        </div>
+    </div>
+
+    <!-- Blue/Green Status -->
+    <div class="blue-green-panel">
+        <div class="card env-panel blue {{ blueGreen.active == 'blue' ? 'active' : '' }}">
+            <div class="env-header">
+                <div class="env-title">
+                    <span style="color: var(--blue-env);">🔵</span> Blue
+                </div>
+                <span class="env-status {{ blueGreen.active == 'blue' ? 'active' : 'standby' }}">
+                    {{ blueGreen.active == 'blue' ? 'Active' : 'Standby' }}
+                </span>
+            </div>
+            <div class="env-details">
+                <div class="env-detail">
+                    <div class="env-detail-label">Version</div>
+                    <div class="env-detail-value">{{ blueGreen.blue.version }}</div>
+                </div>
+                <div class="env-detail">
+                    <div class="env-detail-label">Status</div>
+                    <div class="env-detail-value" style="color: var(--secondary);">{{ blueGreen.blue.status }}</div>
+                </div>
+                <div class="env-detail">
+                    <div class="env-detail-label">Traffic</div>
+                    <div class="env-detail-value">{{ blueGreen.blue.traffic }}%</div>
+                </div>
+            </div>
+            <div class="traffic-bar">
+                <div class="traffic-fill blue" style="width: {{ blueGreen.blue.traffic }}%;"></div>
+            </div>
+        </div>
+
+        <div class="card env-panel green {{ blueGreen.active == 'green' ? 'active' : '' }}">
+            <div class="env-header">
+                <div class="env-title">
+                    <span style="color: var(--green-env);">🟢</span> Green
+                </div>
+                <span class="env-status {{ blueGreen.active == 'green' ? 'active' : 'standby' }}">
+                    {{ blueGreen.active == 'green' ? 'Active' : 'Standby' }}
+                </span>
+            </div>
+            <div class="env-details">
+                <div class="env-detail">
+                    <div class="env-detail-label">Version</div>
+                    <div class="env-detail-value">{{ blueGreen.green.version }}</div>
+                </div>
+                <div class="env-detail">
+                    <div class="env-detail-label">Status</div>
+                    <div class="env-detail-value" style="color: var(--secondary);">{{ blueGreen.green.status }}</div>
+                </div>
+                <div class="env-detail">
+                    <div class="env-detail-label">Traffic</div>
+                    <div class="env-detail-value">{{ blueGreen.green.traffic }}%</div>
+                </div>
+            </div>
+            <div class="traffic-bar">
+                <div class="traffic-fill green" style="width: {{ blueGreen.green.traffic }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Deployments -->
+    <section class="deployments-section">
+        <div class="section-header">
+            <h2>📦 Recent Deployments</h2>
+        </div>
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <table class="deployments-table">
+                <thead>
+                    <tr>
+                        <th>Version</th>
+                        <th>Environment</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for deployment in deployments %}
+                    <tr>
+                        <td><strong>{{ deployment.version }}</strong></td>
+                        <td>
+                            <span style="color: {{ deployment.env == 'blue' ? 'var(--blue-env)' : 'var(--green-env)' }};">
+                                {{ deployment.env == 'blue' ? '🔵' : '🟢' }} {{ deployment.env|upper }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ deployment.status }}">
+                                {{ deployment.status }}
+                            </span>
+                        </td>
+                        <td>{{ deployment.date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

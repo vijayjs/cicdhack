@@ -1,0 +1,104 @@
+# GitFlow Feature Branch Workflow
+# Auto-deploys feature branches to preview environments
+
+name: Feature Branch
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+  pull_request:
+    branches:
+      - develop
+
+env:
+  PHP_VERSION: '8.2'
+
+jobs:
+  # ==========================================
+  # BUILD & VALIDATE
+  # ==========================================
+  build:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Check code style
+        run: |
+          composer require --dev friendsofphp/php-cs-fixer
+          vendor/bin/php-cs-fixer fix --dry-run --diff src || true
+
+      - name: Run static analysis
+        run: |
+          composer require --dev phpstan/phpstan
+          vendor/bin/phpstan analyse src --level=5 || true
+
+      - name: Run tests
+        run: |
+          mkdir -p var/log
+          vendor/bin/phpunit
+
+  # ==========================================
+  # QUICK SECURITY CHECK
+  # ==========================================
+  security:
+    name: Quick Security Check
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+
+      - name: Composer audit
+        run: composer audit || true
+
+  # ==========================================
+  # PR COMMENT
+  # ==========================================
+  comment:
+    name: PR Status Comment
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Add PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 Feature Branch Check Results
+              
+              | Check | Status |
+              |-------|--------|
+              | Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+              | Security | ${{ needs.security.result == 'success' && '✅ Passed' || '⚠️ Check logs' }} |
+              
+              Ready for review: ${{ needs.build.result == 'success' && '✅ Yes' || '❌ No' }}`
+            })

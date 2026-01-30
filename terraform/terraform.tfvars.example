@@ -1,0 +1,24 @@
+# Example Production Variables
+# Copy to terraform.tfvars and fill in values
+
+aws_region  = "us-east-1"
+environment = "prod"
+project_name = "symfony-bg"
+
+vpc_cidr = "10.0.0.0/16"
+
+# Blue/Green Traffic (adjust for deployments)
+blue_traffic_weight  = 100
+green_traffic_weight = 0
+
+# Application Versions
+blue_version  = "v1.0.0"
+green_version = "v1.0.0"
+
+# Database
+db_username = "symfony_admin"
+# Set db_password via environment variable:
+# export TF_VAR_db_password="YourSecurePassword123!"
+
+# SSH Key (create in AWS Console first)
+ssh_key_name = "symfony-key"

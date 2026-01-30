@@ -1,0 +1,177 @@
+# Production Deployment Workflow
+# Manual trigger for production releases
+
+name: Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.2.0)'
+        required: true
+        type: string
+      deployment_strategy:
+        description: 'Deployment strategy'
+        required: true
+        type: choice
+        options:
+          - canary
+          - blue-green-instant
+          - blue-green-gradual
+        default: canary
+      rollback_version:
+        description: 'Version to rollback to (if needed)'
+        required: false
+        type: string
+
+env:
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Validate version tag
+        id: check
+        run: |
+          if git tag -l "${{ github.event.inputs.version }}" | grep -q .; then
+            echo "proceed=true" >> $GITHUB_OUTPUT
+            echo "✅ Version ${{ github.event.inputs.version }} found"
+          else
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            echo "❌ Version ${{ github.event.inputs.version }} not found"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.proceed == 'true'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Deploy with Canary Strategy
+        if: github.event.inputs.deployment_strategy == 'canary'
+        working-directory: terraform
+        run: |
+          terraform init
+          
+          echo "🚀 Phase 1: Deploying to Green (0% traffic)"
+          terraform apply -auto-approve \
+            -var="green_version=${{ github.event.inputs.version }}" \
+            -var="blue_traffic_weight=100" \
+            -var="green_traffic_weight=0"
+          
+          sleep 60
+          
+          echo "🔄 Phase 2: Canary (10% traffic to Green)"
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=90" \
+            -var="green_traffic_weight=10"
+          
+          echo "⏳ Monitoring canary for 5 minutes..."
+          sleep 300
+          
+          echo "🔄 Phase 3: Ramping up (50% traffic)"
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=50" \
+            -var="green_traffic_weight=50"
+          
+          sleep 300
+          
+          echo "✅ Phase 4: Full switch (100% traffic to Green)"
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=0" \
+            -var="green_traffic_weight=100"
+
+      - name: Deploy with Instant Switch
+        if: github.event.inputs.deployment_strategy == 'blue-green-instant'
+        working-directory: terraform
+        run: |
+          terraform init
+          
+          echo "🚀 Deploying to Green"
+          terraform apply -auto-approve \
+            -var="green_version=${{ github.event.inputs.version }}" \
+            -var="blue_traffic_weight=100" \
+            -var="green_traffic_weight=0"
+          
+          sleep 60
+          
+          echo "🔄 Instant switch to Green"
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=0" \
+            -var="green_traffic_weight=100"
+
+      - name: Create deployment record
+        run: |
+          echo "Deployment Record" > deployment-record.txt
+          echo "=================" >> deployment-record.txt
+          echo "Version: ${{ github.event.inputs.version }}" >> deployment-record.txt
+          echo "Strategy: ${{ github.event.inputs.deployment_strategy }}" >> deployment-record.txt
+          echo "Timestamp: $(date -u)" >> deployment-record.txt
+          echo "Actor: ${{ github.actor }}" >> deployment-record.txt
+
+      - name: Notify success
+        run: |
+          echo "🎉 Deployment of ${{ github.event.inputs.version }} completed successfully!"
+
+  rollback:
+    name: Rollback (if needed)
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure() && github.event.inputs.rollback_version != ''
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Rollback to previous version
+        working-directory: terraform
+        run: |
+          terraform init
+          
+          echo "⚠️ Rolling back to ${{ github.event.inputs.rollback_version }}"
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=100" \
+            -var="green_traffic_weight=0"
+          
+          echo "✅ Rollback complete - traffic restored to Blue"

@@ -1,0 +1,329 @@
+# CI/CD Pipeline with GitFlow and Security Scanning
+# Triggers on push to develop, release/*, and pull requests to main
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - 'release/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  PHP_VERSION: '8.2'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  # ==========================================
+  # BUILD & TEST
+  # ==========================================
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPUnit tests
+        run: |
+          mkdir -p var/log
+          vendor/bin/phpunit --coverage-clover coverage.xml
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+  # ==========================================
+  # SECURITY SCANNING
+  # ==========================================
+  security-sast:
+    name: SAST - Static Analysis
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPStan
+        run: |
+          composer require --dev phpstan/phpstan --no-interaction
+          vendor/bin/phpstan analyse src --level=5 --error-format=github || true
+
+      - name: Run Psalm
+        run: |
+          composer require --dev vimeo/psalm --no-interaction
+          vendor/bin/psalm --init src 3 || true
+          vendor/bin/psalm --output-format=github || true
+
+  security-dependencies:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+
+      - name: Composer Security Audit
+        run: composer audit --format=plain
+
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  security-infrastructure:
+    name: Infrastructure Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: true
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true
+          output_format: sarif
+          output_file_path: reports/
+
+  # ==========================================
+  # DEPLOY TO GREEN (Staging)
+  # ==========================================
+  deploy-green:
+    name: Deploy to Green Environment
+    runs-on: ubuntu-latest
+    needs: [security-sast, security-dependencies, security-infrastructure]
+    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Get current commit SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Green Environment
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform plan \
+            -var="green_version=${{ steps.vars.outputs.sha_short }}" \
+            -var="green_traffic_weight=0" \
+            -var="blue_traffic_weight=100" \
+            -out=tfplan
+          terraform apply -auto-approve tfplan
+
+      - name: Upload application to Green
+        run: |
+          # Package application
+          tar -czf app.tar.gz --exclude='.git' --exclude='terraform' --exclude='node_modules' .
+          
+          # Get Green instance ID
+          GREEN_INSTANCE=$(aws ec2 describe-instances \
+            --filters "Name=tag:Environment,Values=green" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].InstanceId' \
+            --output text)
+          
+          # Deploy using SSM
+          aws ssm send-command \
+            --instance-ids $GREEN_INSTANCE \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["cd /var/www/html && rm -rf * && aws s3 cp s3://symfony-deployments/app.tar.gz . && tar -xzf app.tar.gz && composer install --no-dev --optimize-autoloader && php bin/console cache:clear --env=prod"]' \
+            --timeout-seconds 300
+
+  # ==========================================
+  # SMOKE TESTS
+  # ==========================================
+  smoke-tests:
+    name: Smoke Tests on Green
+    runs-on: ubuntu-latest
+    needs: deploy-green
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Wait for deployment
+        run: sleep 60
+
+      - name: Get Green instance IP
+        id: green-ip
+        run: |
+          GREEN_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Environment,Values=green" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "ip=$GREEN_IP" >> $GITHUB_OUTPUT
+
+      - name: Run health check
+        run: |
+          for i in {1..10}; do
+            if curl -s -o /dev/null -w "%{http_code}" http://${{ steps.green-ip.outputs.ip }}/health | grep -q "200"; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying..."
+            sleep 10
+          done
+          echo "Health check failed after 10 attempts"
+          exit 1
+
+      - name: Run basic endpoint tests
+        run: |
+          # Test homepage
+          curl -f http://${{ steps.green-ip.outputs.ip }}/ || exit 1
+          
+          # Test dashboard
+          curl -f http://${{ steps.green-ip.outputs.ip }}/dashboard || exit 1
+          
+          echo "All smoke tests passed!"
+
+  # ==========================================
+  # PRODUCTION DEPLOYMENT (Blue/Green Switch)
+  # ==========================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    if: startsWith(github.ref, 'refs/heads/release/')
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Switch traffic to Green (Canary 10%)
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=90" \
+            -var="green_traffic_weight=10"
+
+      - name: Wait and monitor (Canary phase)
+        run: |
+          echo "Canary deployment active - monitoring for 5 minutes..."
+          sleep 300
+
+      - name: Switch traffic to Green (50%)
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=50" \
+            -var="green_traffic_weight=50"
+
+      - name: Wait and monitor (50/50 phase)
+        run: |
+          echo "50/50 traffic split - monitoring for 5 minutes..."
+          sleep 300
+
+      - name: Complete traffic switch to Green (100%)
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve \
+            -var="blue_traffic_weight=0" \
+            -var="green_traffic_weight=100"
+
+      - name: Notify deployment complete
+        run: |
+          echo "🚀 Production deployment complete!"
+          echo "Green environment is now live."

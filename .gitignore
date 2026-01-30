@@ -1,0 +1,45 @@
+# Symfony Application
+/vendor/
+/var/
+/.env.local
+/.env.*.local
+/public/bundles/
+/public/build/
+
+# PHPUnit
+/.phpunit.result.cache
+/phpunit.xml
+
+# Node
+/node_modules/
+
+# IDE
+/.idea/
+/.vscode/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/crash.log
+terraform/*.tfvars
+!terraform/terraform.tfvars.example
+
+# Secrets
+*.pem
+*.key
+.env.local
+.env.*.local
+
+# Build artifacts
+/coverage/
+*.tar.gz
+
+# Logs
+*.log

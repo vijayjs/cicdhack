@@ -1,0 +1,245 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Home{% endblock %}
+{% block meta_description %}Symfony AWS Blue/Green Deployment Platform - Zero-downtime deployments with Terraform automation{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .hero {
+        padding: 4rem 0;
+        text-align: center;
+    }
+
+    .hero h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, var(--white) 0%, var(--gray-400) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero p {
+        font-size: 1.25rem;
+        color: var(--gray-400);
+        max-width: 600px;
+        margin: 0 auto 2rem;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 4rem 0;
+    }
+
+    .stat-card {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .stat-value {
+        font-size: 3rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--gray-400);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .features-section {
+        padding: 4rem 0;
+    }
+
+    .section-title {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .feature-card {
+        padding: 2rem;
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .feature-card p {
+        color: var(--gray-400);
+        font-size: 0.95rem;
+    }
+
+    .server-info {
+        margin-top: 4rem;
+        padding: 2rem;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 16px;
+    }
+
+    .server-info h3 {
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .info-item {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .info-label {
+        font-size: 0.75rem;
+        color: var(--gray-400);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <section class="hero">
+        <h1>🚀 Symfony AWS Platform</h1>
+        <p>Production-ready PHP application with Blue/Green deployment, Terraform automation, and complete CI/CD pipeline.</p>
+        <div class="hero-buttons">
+            <a href="{{ path('dashboard_index') }}" class="btn btn-primary">
+                📊 View Dashboard
+            </a>
+            <a href="{{ path('app_about') }}" class="btn btn-secondary">
+                ℹ️ Learn More
+            </a>
+        </div>
+    </section>
+
+    <section class="stats-grid">
+        <div class="card stat-card">
+            <div class="stat-value">99.9%</div>
+            <div class="stat-label">Uptime</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">0s</div>
+            <div class="stat-label">Downtime per Deploy</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">< 5min</div>
+            <div class="stat-label">Rollback Time</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Automated</div>
+        </div>
+    </section>
+
+    <section class="features-section">
+        <h2 class="section-title">✨ Key Features</h2>
+        <div class="features-grid">
+            <div class="card feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3>Blue/Green Deployment</h3>
+                <p>Zero-downtime releases with instant rollback capability. Traffic smoothly shifts between environments.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">☁️</div>
+                <h3>AWS Free Tier</h3>
+                <p>Optimized for AWS Free Tier using EC2 t2.micro instances and RDS MySQL.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">🔧</div>
+                <h3>Infrastructure as Code</h3>
+                <p>Complete Terraform automation for reproducible, version-controlled infrastructure.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Security Scanning</h3>
+                <p>SAST, dependency scanning, container scanning, and infrastructure security checks.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>CI/CD Pipeline</h3>
+                <p>Automated testing, building, and deployment with GitHub Actions and GitFlow.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>DevOps Metrics</h3>
+                <p>Track Lead Time, Deployment Frequency, MTTR, and Change Failure Rate.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="server-info">
+        <h3>🖥️ Server Information</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Hostname</div>
+                <div class="info-value">{{ serverInfo.hostname }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">PHP Version</div>
+                <div class="info-value">{{ serverInfo.php_version }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Symfony Version</div>
+                <div class="info-value">{{ serverInfo.symfony_version }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Environment</div>
+                <div class="info-value" style="color: {% if environment == 'blue' %}var(--blue-env){% else %}var(--green-env){% endif %};">
+                    {{ environment|upper }}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Version</div>
+                <div class="info-value">{{ version }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Timestamp</div>
+                <div class="info-value">{{ "now"|date("Y-m-d H:i:s") }}</div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

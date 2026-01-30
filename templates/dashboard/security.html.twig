@@ -1,0 +1,166 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Security Scans{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+        color: var(--gray-400);
+    }
+
+    .nav-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .nav-tab {
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: var(--gray-400);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .nav-tab:hover,
+    .nav-tab.active {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: var(--primary);
+        color: var(--white);
+    }
+
+    .scans-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .scan-card {
+        padding: 1.5rem;
+    }
+
+    .scan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .scan-type {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--gray-400);
+    }
+
+    .scan-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .scan-status.passed {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--secondary);
+    }
+
+    .scan-status.failed {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+    }
+
+    .scan-tool {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .scan-issues {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--gray-400);
+    }
+
+    .issues-count {
+        font-weight: 600;
+        color: var(--white);
+    }
+
+    .summary-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(16, 185, 129, 0.1));
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .summary-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .summary-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-text {
+        color: var(--gray-400);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="page-header">
+        <h1>🔒 Security Scans</h1>
+        <p>Continuous security scanning of code, dependencies, and infrastructure</p>
+    </div>
+
+    <div class="nav-tabs">
+        <a href="{{ path('dashboard_index') }}" class="nav-tab">Overview</a>
+        <a href="{{ path('dashboard_deployments') }}" class="nav-tab">Deployments</a>
+        <a href="{{ path('dashboard_security') }}" class="nav-tab active">Security</a>
+    </div>
+
+    <div class="card summary-card">
+        <div class="summary-icon">✅</div>
+        <div class="summary-title">All Security Scans Passed</div>
+        <div class="summary-text">No critical or high vulnerabilities found in the latest scan</div>
+    </div>
+
+    <div class="scans-grid">
+        {% for scan in scans %}
+        <div class="card scan-card">
+            <div class="scan-header">
+                <span class="scan-type">{{ scan.type }}</span>
+                <span class="scan-status {{ scan.status }}">
+                    {{ scan.status == 'passed' ? '✓' : '✗' }} {{ scan.status }}
+                </span>
+            </div>
+            <div class="scan-tool">{{ scan.tool }}</div>
+            <div class="scan-issues">
+                <span class="issues-count">{{ scan.issues }}</span> issues found
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

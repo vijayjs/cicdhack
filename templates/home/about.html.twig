@@ -1,0 +1,146 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}About{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .about-hero {
+        padding: 4rem 0;
+        text-align: center;
+    }
+
+    .about-hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .about-hero p {
+        color: var(--gray-400);
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .features-list {
+        margin-top: 4rem;
+    }
+
+    .feature-item {
+        display: flex;
+        gap: 2rem;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        align-items: flex-start;
+    }
+
+    .feature-number {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .feature-content h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-content p {
+        color: var(--gray-400);
+    }
+
+    .tech-stack {
+        margin-top: 4rem;
+    }
+
+    .tech-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .tech-item {
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .tech-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .tech-name {
+        font-weight: 600;
+    }
+
+    .tech-version {
+        font-size: 0.875rem;
+        color: var(--gray-400);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <section class="about-hero">
+        <h1>About This Platform</h1>
+        <p>A demonstration of modern DevOps practices including Blue/Green deployment, Infrastructure as Code, and comprehensive CI/CD pipelines with security scanning.</p>
+    </section>
+
+    <section class="features-list">
+        {% set counter = 1 %}
+        {% for feature, description in features %}
+        <div class="card feature-item">
+            <div class="feature-number">{{ counter }}</div>
+            <div class="feature-content">
+                <h3>{{ feature }}</h3>
+                <p>{{ description }}</p>
+            </div>
+        </div>
+        {% set counter = counter + 1 %}
+        {% endfor %}
+    </section>
+
+    <section class="tech-stack">
+        <h2 style="text-align: center;">🛠️ Technology Stack</h2>
+        <div class="tech-grid">
+            <div class="card tech-item">
+                <div class="tech-icon">🐘</div>
+                <div class="tech-name">PHP</div>
+                <div class="tech-version">8.2+</div>
+            </div>
+            <div class="card tech-item">
+                <div class="tech-icon">🎵</div>
+                <div class="tech-name">Symfony</div>
+                <div class="tech-version">7.0</div>
+            </div>
+            <div class="card tech-item">
+                <div class="tech-icon">☁️</div>
+                <div class="tech-name">AWS</div>
+                <div class="tech-version">Free Tier</div>
+            </div>
+            <div class="card tech-item">
+                <div class="tech-icon">🏗️</div>
+                <div class="tech-name">Terraform</div>
+                <div class="tech-version">1.5+</div>
+            </div>
+            <div class="card tech-item">
+                <div class="tech-icon">🐙</div>
+                <div class="tech-name">GitHub</div>
+                <div class="tech-version">Actions</div>
+            </div>
+            <div class="card tech-item">
+                <div class="tech-icon">🐳</div>
+                <div class="tech-name">Docker</div>
+                <div class="tech-version">Latest</div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
