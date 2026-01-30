@@ -16,6 +16,11 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 env:
   PHP_VERSION: '8.2'
   AWS_REGION: 'us-east-1'
