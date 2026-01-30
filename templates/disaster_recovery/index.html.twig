@@ -1,0 +1,365 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Disaster Recovery{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+        color: var(--gray-400);
+    }
+
+    .nav-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .nav-tab {
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: var(--gray-400);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .nav-tab:hover,
+    .nav-tab.active {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: var(--primary);
+        color: var(--white);
+    }
+
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .status-card {
+        padding: 1.5rem;
+    }
+
+    .status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .status-title {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-badge.ready { background: rgba(16, 185, 129, 0.2); color: var(--secondary); }
+    .status-badge.active { background: rgba(59, 130, 246, 0.2); color: var(--blue-env); }
+    .status-badge.standby { background: rgba(245, 158, 11, 0.2); color: var(--accent); }
+
+    .status-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .detail-item {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .detail-label {
+        font-size: 0.7rem;
+        color: var(--gray-400);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .detail-value {
+        font-weight: 600;
+        margin-top: 0.25rem;
+    }
+
+    .objectives-section {
+        margin-top: 2rem;
+    }
+
+    .objectives-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .objective-card {
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .objective-label {
+        font-size: 0.875rem;
+        color: var(--gray-400);
+        margin-bottom: 0.5rem;
+    }
+
+    .objective-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .objective-value.met { color: var(--secondary); }
+    .objective-value.not-met { color: var(--danger); }
+
+    .objective-target {
+        font-size: 0.75rem;
+        color: var(--gray-400);
+    }
+
+    .health-section {
+        margin-top: 2rem;
+    }
+
+    .health-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .health-item {
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .health-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .health-icon.healthy { background: rgba(16, 185, 129, 0.2); }
+    .health-icon.unhealthy { background: rgba(239, 68, 68, 0.2); }
+
+    .health-info .health-name {
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .health-info .health-status {
+        font-size: 0.75rem;
+        color: var(--gray-400);
+    }
+
+    .history-section {
+        margin-top: 2rem;
+    }
+
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .history-table th,
+    .history-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .history-table th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--gray-400);
+    }
+
+    .result-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .result-badge.success { background: rgba(16, 185, 129, 0.2); color: var(--secondary); }
+    .result-badge.failed { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="page-header">
+        <h1>🛡️ Disaster Recovery</h1>
+        <p>Monitor DR status, run simulations, and manage resilience testing</p>
+    </div>
+
+    <div class="nav-tabs">
+        <a href="{{ path('dr_index') }}" class="nav-tab active">Overview</a>
+        <a href="{{ path('dr_simulations') }}" class="nav-tab">Simulations</a>
+        <a href="{{ path('dr_chaos') }}" class="nav-tab">Chaos Engineering</a>
+        <a href="{{ path('dr_runbooks') }}" class="nav-tab">Runbooks</a>
+    </div>
+
+    <!-- DR Status -->
+    <div class="status-grid">
+        <div class="card status-card">
+            <div class="status-header">
+                <span class="status-title">🏠 Primary Region</span>
+                <span class="status-badge active">{{ status.primary_region.status }}</span>
+            </div>
+            <div class="status-details">
+                <div class="detail-item">
+                    <div class="detail-label">Region</div>
+                    <div class="detail-value">{{ status.primary_region.name }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Health</div>
+                    <div class="detail-value" style="color: var(--secondary);">{{ status.primary_region.health }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card status-card">
+            <div class="status-header">
+                <span class="status-title">🌍 DR Region</span>
+                <span class="status-badge standby">{{ status.secondary_region.status }}</span>
+            </div>
+            <div class="status-details">
+                <div class="detail-item">
+                    <div class="detail-label">Region</div>
+                    <div class="detail-value">{{ status.secondary_region.name }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Replication</div>
+                    <div class="detail-value">{{ status.secondary_region.replication_lag }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card status-card">
+            <div class="status-header">
+                <span class="status-title">⚡ Failover</span>
+                <span class="status-badge ready">{{ status.failover.mode }}</span>
+            </div>
+            <div class="status-details">
+                <div class="detail-item">
+                    <div class="detail-label">Threshold</div>
+                    <div class="detail-value">{{ status.failover.threshold }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Cooldown</div>
+                    <div class="detail-value">{{ status.failover.cooldown_period }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card status-card">
+            <div class="status-header">
+                <span class="status-title">💾 Backups</span>
+                <span class="status-badge ready">active</span>
+            </div>
+            <div class="status-details">
+                <div class="detail-item">
+                    <div class="detail-label">Type</div>
+                    <div class="detail-value">{{ status.backup.database.type }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Retention</div>
+                    <div class="detail-value">{{ status.backup.database.retention }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recovery Objectives -->
+    <section class="objectives-section">
+        <h2 style="margin-bottom: 1rem;">📊 Recovery Objectives</h2>
+        <div class="objectives-grid">
+            <div class="card objective-card">
+                <div class="objective-label">Recovery Time Objective (RTO)</div>
+                <div class="objective-value {{ status.objectives.rto.status == 'met' ? 'met' : 'not-met' }}">
+                    {{ status.objectives.rto.achieved }}
+                </div>
+                <div class="objective-target">Target: {{ status.objectives.rto.target }}</div>
+            </div>
+            <div class="card objective-card">
+                <div class="objective-label">Recovery Point Objective (RPO)</div>
+                <div class="objective-value {{ status.objectives.rpo.status == 'met' ? 'met' : 'not-met' }}">
+                    {{ status.objectives.rpo.achieved }}
+                </div>
+                <div class="objective-target">Target: {{ status.objectives.rpo.target }}</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Health Checks -->
+    <section class="health-section">
+        <h2 style="margin-bottom: 1rem;">🏥 System Health</h2>
+        <div class="health-grid">
+            {% for name, check in healthChecks %}
+            <div class="card health-item">
+                <div class="health-icon {{ check.status }}">
+                    {% if check.status == 'healthy' %}✅{% else %}❌{% endif %}
+                </div>
+                <div class="health-info">
+                    <div class="health-name">{{ name|replace({'_': ' '})|title }}</div>
+                    <div class="health-status">{{ check.status }} • {{ check.latency is defined ? check.latency : 'OK' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Recent Simulations -->
+    <section class="history-section">
+        <h2 style="margin-bottom: 1rem;">📜 Recent DR Tests</h2>
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Scenario</th>
+                        <th>Result</th>
+                        <th>RTO</th>
+                        <th>RPO</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sim in history %}
+                    <tr>
+                        <td><code>{{ sim.id }}</code></td>
+                        <td>{{ sim.scenario|replace({'_': ' '})|title }}</td>
+                        <td><span class="result-badge {{ sim.result }}">{{ sim.result }}</span></td>
+                        <td>{{ sim.rto_achieved }}</td>
+                        <td>{{ sim.rpo_achieved }}</td>
+                        <td>{{ sim.started_at|date('Y-m-d') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

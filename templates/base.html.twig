@@ -235,6 +235,7 @@
             <ul class="nav-links">
                 <li><a href="{{ path('app_home') }}" class="{% if app.request.attributes.get('_route') == 'app_home' %}active{% endif %}">Home</a></li>
                 <li><a href="{{ path('dashboard_index') }}" class="{% if 'dashboard' in app.request.attributes.get('_route') %}active{% endif %}">Dashboard</a></li>
+                <li><a href="{{ path('dr_index') }}" class="{% if 'dr_' in app.request.attributes.get('_route') %}active{% endif %}">DR</a></li>
                 <li><a href="{{ path('app_about') }}" class="{% if app.request.attributes.get('_route') == 'app_about' %}active{% endif %}">About</a></li>
             </ul>
             <span class="env-badge {{ environment|default('blue') }}">

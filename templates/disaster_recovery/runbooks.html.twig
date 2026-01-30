@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}DR Runbooks{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem;">📖 Runbooks</h1>
+        <p style="color: #9ca3af;">Step-by-step procedures for incident response</p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+        <a href="{{ path('dr_index') }}" class="btn btn-secondary">Overview</a>
+        <a href="{{ path('dr_simulations') }}" class="btn btn-secondary">Simulations</a>
+        <a href="{{ path('dr_chaos') }}" class="btn btn-secondary">Chaos</a>
+        <a href="{{ path('dr_runbooks') }}" class="btn btn-primary">Runbooks</a>
+    </div>
+
+    <div style="display: grid; gap: 1.5rem;">
+        {% for runbook in runbooks %}
+        <div class="card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="margin: 0;">{{ runbook.name }}</h3>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af;">
+                        <span>📁 {{ runbook.category }}</span>
+                        <span>⏱️ {{ runbook.estimated_time }}</span>
+                        <span>📅 Updated: {{ runbook.last_updated }}</span>
+                    </div>
+                </div>
+                <span style="padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+                    {% if runbook.severity == 'P1' %}background: rgba(239, 68, 68, 0.2); color: #ef4444;
+                    {% else %}background: rgba(245, 158, 11, 0.2); color: #f59e0b;{% endif %}">
+                    {{ runbook.severity }}
+                </span>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem;">
+                <h4 style="font-size: 0.75rem; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.5rem;">Steps</h4>
+                <ol style="margin: 0; padding-left: 1.5rem; font-size: 0.875rem; color: #e5e7eb;">
+                    {% for step in runbook.steps %}
+                    <li style="margin-bottom: 0.5rem;">{{ step }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="btn btn-secondary" style="flex: 1;">📋 Copy Steps</button>
+                <button class="btn btn-primary" style="flex: 1;">▶️ Execute Runbook</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

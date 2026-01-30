@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}DR Simulations{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem;">🧪 DR Simulations</h1>
+        <p style="color: #9ca3af;">Run disaster recovery simulations</p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+        <a href="{{ path('dr_index') }}" class="btn btn-secondary">Overview</a>
+        <a href="{{ path('dr_simulations') }}" class="btn btn-primary">Simulations</a>
+        <a href="{{ path('dr_chaos') }}" class="btn btn-secondary">Chaos</a>
+        <a href="{{ path('dr_runbooks') }}" class="btn btn-secondary">Runbooks</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+        {% for id, scenario in scenarios %}
+        <div class="card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                <strong>{{ scenario.name }}</strong>
+                <span style="padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">
+                    {{ scenario.severity }}
+                </span>
+            </div>
+            <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1rem;">{{ scenario.description }}</p>
+            <p style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 1rem;">⏱️ {{ scenario.estimated_duration }}</p>
+            <button class="btn btn-primary" style="width: 100%;" onclick="alert('Simulation {{ id }} started!')">
+                🚀 Run Simulation
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2 style="margin-top: 2rem;">📜 History</h2>
+    <div class="card" style="padding: 0; overflow: hidden; margin-top: 1rem;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">ID</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Scenario</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Result</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sim in history %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 1rem;"><code>{{ sim.id }}</code></td>
+                    <td style="padding: 1rem;">{{ sim.scenario|replace({'_': ' '})|title }}</td>
+                    <td style="padding: 1rem;"><span style="color: #10b981;">{{ sim.result }}</span></td>
+                    <td style="padding: 1rem;">{{ sim.started_at|date('Y-m-d') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

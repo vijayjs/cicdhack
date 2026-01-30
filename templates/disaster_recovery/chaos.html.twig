@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Chaos Engineering{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem;">🔥 Chaos Engineering</h1>
+        <p style="color: #9ca3af;">Controlled failure injection for resilience testing</p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+        <a href="{{ path('dr_index') }}" class="btn btn-secondary">Overview</a>
+        <a href="{{ path('dr_simulations') }}" class="btn btn-secondary">Simulations</a>
+        <a href="{{ path('dr_chaos') }}" class="btn btn-primary">Chaos</a>
+        <a href="{{ path('dr_runbooks') }}" class="btn btn-secondary">Runbooks</a>
+    </div>
+
+    {% if not enabled %}
+    <div class="card" style="padding: 2rem; text-align: center; border-color: rgba(245, 158, 11, 0.5);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+        <h3>Chaos Engineering Disabled</h3>
+        <p style="color: #9ca3af;">Set CHAOS_ENABLED=true in environment to enable</p>
+    </div>
+    {% endif %}
+
+    <h2 style="margin-bottom: 1rem;">Available Experiments</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% for id, exp in experiments %}
+        <div class="card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <strong>{{ exp.name }}</strong>
+                <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: rgba(99, 102, 241, 0.2); border-radius: 999px;">
+                    {{ exp.category }}
+                </span>
+            </div>
+            <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1rem;">{{ exp.description }}</p>
+            <p style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 1rem;">
+                Impact: {{ exp.impact }}
+            </p>
+            <button class="btn btn-primary" style="width: 100%;" {% if not enabled %}disabled{% endif %}>
+                ⚡ Start Experiment
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2 style="margin-top: 2rem; margin-bottom: 1rem;">📅 Game Days</h2>
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Name</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Date</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Scenarios</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Findings</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for gd in gameDays %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 1rem;"><strong>{{ gd.name }}</strong></td>
+                    <td style="padding: 1rem;">{{ gd.date }}</td>
+                    <td style="padding: 1rem;">{{ gd.scenarios_tested|length }}</td>
+                    <td style="padding: 1rem;">{{ gd.findings }} ({{ gd.action_items_closed }} resolved)</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2 style="margin-top: 2rem; margin-bottom: 1rem;">📜 Experiment History</h2>
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">ID</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Experiment</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Duration</th>
+                    <th style="padding: 1rem; text-align: left; color: #9ca3af; font-size: 0.75rem;">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in history %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 1rem;"><code>{{ exp.id }}</code></td>
+                    <td style="padding: 1rem;">{{ exp.experiment_id|replace({'_': ' '})|title }}</td>
+                    <td style="padding: 1rem;">{{ exp.duration }}</td>
+                    <td style="padding: 1rem;">{{ exp.started_at|date('Y-m-d') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
