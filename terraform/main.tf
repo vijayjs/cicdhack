@@ -12,7 +12,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "symfony-terraform-state"
+    bucket         = "symfony-terraform-state-vijayjs"
     key            = "bluegreen/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true

@@ -29,8 +29,29 @@ pipeline {
                     steps {
                         withSonarQubeEnv('SonarQube') {
                             sh 'vendor/bin/phpunit --coverage-clover coverage.xml --log-junit junit.xml'
-                            sh 'sonar-scanner -Dsonar.projectKey=${PROJECT_NAME} -Dsonar.sources=src -Dsonar.tests=tests -Dsonar.php.coverage.reportPaths=coverage.xml'
+                            sh 'sonar-scanner -Dsonar.projectKey=${PROJECT_NAME} -Dsonar.sources=src -Dsonar.tests=tests -Dsonar.php.coverage.reportPaths=coverage.xml -Dsonar.php.tests.reportPath=junit.xml'
                         }
+                        timeout(time: 5, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    }
+                }
+                stage('Security Scanning') {
+                    steps {
+                        parallel(
+                            "Dependency Scan" : {
+                                sh 'trivy fs . --severity HIGH,CRITICAL --format table'
+                                sh 'composer audit'
+                            },
+                            "Secret Scan" : {
+                                sh 'gitleaks detect --source . --verbose'
+                            },
+                            "DAST Scan" : {
+                                // Assuming ZAP is available as a command or container
+                                echo 'Running OWASP ZAP Baseline Scan...'
+                                // sh 'docker run -t owasp/zap2docker-stable zap-baseline.py -t http://localhost'
+                            }
+                        )
                     }
                 }
                 stage('PHPStan') {
