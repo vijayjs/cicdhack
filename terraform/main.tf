@@ -142,29 +142,3 @@ resource "aws_lb_listener_rule" "blue_green" {
   }
 }
 
-# Outputs
-output "alb_dns_name" {
-  description = "DNS name of the Application Load Balancer"
-  value       = module.alb.alb_dns_name
-}
-
-output "blue_instance_id" {
-  description = "Blue environment EC2 instance ID"
-  value       = module.blue.instance_id
-}
-
-output "green_instance_id" {
-  description = "Green environment EC2 instance ID"
-  value       = module.green.instance_id
-}
-
-output "db_endpoint" {
-  description = "RDS database endpoint"
-  value       = module.rds.db_endpoint
-  sensitive   = true
-}
-
-output "active_environment" {
-  description = "Current active environment based on traffic weight"
-  value       = var.blue_traffic_weight > var.green_traffic_weight ? "blue" : "green"
-}
