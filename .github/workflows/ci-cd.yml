@@ -1,5 +1,5 @@
 # CI/CD Pipeline with GitFlow and Security Scanning
-# Triggers on push to develop, release/*, and pull requests to main
+# Triggers on push to develop, release/*, pull requests to main, and release publish
 
 name: CI/CD Pipeline
 
@@ -13,6 +13,8 @@ on:
     branches:
       - main
       - develop
+  release:
+    types: [published]
 
 env:
   PHP_VERSION: '8.2'
@@ -161,7 +163,7 @@ jobs:
     name: Deploy to Green Environment
     runs-on: ubuntu-latest
     needs: [security-sast, security-dependencies, security-infrastructure]
-    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')
+    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'release'
     environment: staging
     
     steps:
@@ -274,7 +276,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: smoke-tests
-    if: startsWith(github.ref, 'refs/heads/release/')
+    if: startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'release'
     environment: production
     
     steps:
