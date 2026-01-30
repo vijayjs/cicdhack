@@ -117,6 +117,7 @@ main ─────────────────────────
 
 | Tool | Type | Purpose |
 |------|------|---------|
+| SonarQube | SAST/Quality | Code quality and security analysis |
 | PHPStan | SAST | Static code analysis |
 | Composer Audit | SCA | Dependency vulnerabilities |
 | Trivy | Container | Docker image scanning |
